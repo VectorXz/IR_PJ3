@@ -5,9 +5,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,11 +15,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-import java.util.Map.Entry;
+
 
 /**
  * This class implements PageRank algorithm on simple graph structure.
@@ -32,7 +27,7 @@ import java.util.Map.Entry;
 public class PageRanker {
 	
 	Set<Integer> pidInLine = new HashSet<Integer>(); // P is the set of all pages; |P| = N
-	Set<Integer> noOutlink = new HashSet<Integer>(); // S is pages that have no out links  hashset : ไมได้ลากไปหาตัวไหนเลย
+	Set<Integer> noOutlink = new HashSet<Integer>(); // S is pages that have no out links  hashset : à¹„à¸¡à¹„à¸”à¹‰à¸¥à¸²à¸�à¹„à¸›à¸«à¸²à¸•à¸±à¸§à¹„à¸«à¸™à¹€à¸¥à¸¢
 	Map<Integer, Set<Integer>> setPages = new HashMap<Integer, Set<Integer>>();// M(p) is the set of pages that link to page p
 	Map<Integer, Integer> setOutlink = new HashMap<Integer, Integer>();// L(q) is the number of out-links from page q
 	
@@ -61,47 +56,41 @@ public class PageRanker {
 			for(String line: lines) {
 				String[] result = line.split(" ");
 				//System.out.println("result "+Arrays.toString(result)+" len "+result.length);
-				int [] arr = new int [result.length];	//element in each line
-				Set<Integer> set = new HashSet<Integer>();
-				for(int i=0; i<result.length; i++) {
-						arr[i] = Integer.parseInt(result[i]);
-						if(!pidInLine.contains(arr[i])) {
-							pidInLine.add(arr[i]); 
-							noOutlink.add(arr[i]);
+				int pageid = Integer.parseInt(result[0]);
+				pidInLine.add(pageid);
+				noOutlink.add(pageid);
+				if(result.length >= 2) {
+					//System.out.println("Finding right");
+					HashSet<Integer> right = new HashSet<Integer>();
+					for(int i = 1; i<result.length; i++) {
+						right.add(Integer.parseInt(result[i]));
+						if(!pidInLine.contains(Integer.parseInt(result[i]))) {
+							pidInLine.add(Integer.parseInt(result[i]));
 						}
-						
 					}
-				 // len > 1 : have a set of page to link to that page
-				
-				
-					if(arr.length > 1) {
-					for(int i=1; i<arr.length; i++) {
-							set.add(arr[i]);
-							setPages.put(arr[0], set);
-							
-							if(setOutlink.get(arr[i]) != null) {
-								//System.out.println("-----find again");
-								setOutlink.put(arr[i],setOutlink.get(arr[i])+1);
-							}
-							else {
-								//System.out.println("=====first find====");
-								setOutlink.put(arr[i], 1);
-							}
-							
+					setPages.put(pageid, right);
+				}
+			}
+			for(Integer page : setPages.keySet()) {
+					for(Integer link : setPages.get(page)) {
+						
+						if(!setOutlink.containsKey(link)) {
+							setOutlink.put(link, 1);
+						} else {
+							int old = setOutlink.get(link);
+							setOutlink.replace(link, old+1);
+						}
 					}
 				}
-				
-				
-				
-							
-			}
+				//System.out.println("END "+ll);
+			//System.out.println("ENDED");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		
-		
+		//System.out.println("End init");
 		
 		for(Integer page: pidInLine) {
 			if( setPages.get(page) != null) {
@@ -120,17 +109,13 @@ public class PageRanker {
 			
 		}
 		
-		
-		for(Integer pageOutLink: noOutlink) {
-			setOutlink.put(pageOutLink, 0);
-		}
-		
 		//setOutlink = sortByKeys(setOutlink);
-//		System.out.println("pidInLine "+pidInLine+"\n");
-//		System.out.println("setPage "+setPages.toString());
-//		System.out.println("setOutLink "+setOutlink);
-//		System.out.println("nooutlink "+noOutlink);
+		//System.out.println("pidInLine "+pidInLine+"\n");
+		//System.out.println("setPage "+setPages.size());
+		//System.out.println("setOutLink "+setOutlink.size());
+		//System.out.println("nooutlink size "+noOutlink.size());
 		//System.out.println("pidInline size "+pidInLine.size());
+		//System.out.println(setOutlink);
 	}
 	
 	
@@ -236,17 +221,20 @@ public class PageRanker {
 		
 		//System.out.println("boolean "+isConverge());
 		while(!isConverge()) {
-			double sinkPR = 0;
+			double sinkPR = 0.0;
 			for(Integer pageP: noOutlink) {
 				sinkPR = sinkPR + PR.get(pageP);
 			}
 			Map<Integer, Double> newPR = new HashMap<Integer, Double>();
 			for(Integer pageP: pidInLine) {
+				double pr = (1.00-0.85)/pidInLine.size();
+				//newPR.put(pageP, );//newPR(p) = (1-d)/N
+				//System.out.println(pidInLine.size());
+				//double temp1 = newPR.get(pageP); //
+				pr = (double) pr + (0.85*sinkPR)/pidInLine.size(); //newPR(p) += d*sinkPR/N
 				
-				newPR.put(pageP, (1.00-0.85)/pidInLine.size());//newPR(p) = (1-d)/N
-				double temp1 = newPR.get(pageP); //
-				temp1 = temp1 + (0.85*sinkPR/pidInLine.size()); //newPR(p) += d*sinkPR/N
-				newPR.put(pageP, temp1);
+				//System.out.println(sinkPR);
+				//newPR.put(pageP, temp1);
 //				System.out.println("====newPR "+newPR);
 //				System.out.println("=====pageP "+pageP);
 				if( setPages.get(pageP) != null) {
@@ -254,21 +242,30 @@ public class PageRanker {
 //						System.out.println("pageQ "+pageQ);
 						//System.out.println("PR "+PR.get(pageQ));
 						if(PR.get(pageQ) != null) {
-							temp1 += (double) 0.85 * PR.get(pageQ)/setOutlink.get(pageQ);
-							newPR.put(pageP, temp1);
+							pr += (double) 0.85 * PR.get(pageQ)/setOutlink.get(pageQ);
+							//System.out.println("pageQ : "+pageQ+" | PR : "+PR.get(pageQ)+" | setOutlink : "+setOutlink.get(pageQ));
+							//System.out.println("pidInLineSize "+pidInLine.size());
+							//System.out.println("sinkPR " + sinkPR);
+							//System.out.println("setOutlink "+setOutlink.get(pageQ));
+							//break;
 						}
+						
 					}
+					//System.out.println(newPR);
 				}
 				
-				
+				 //break;
+				//System.out.println(pageP + " " + pr);
+				newPR.put(pageP, pr);
 			}
+			
+			
 			for(Integer pageP: pidInLine) {
 				PR.put(pageP, newPR.get(pageP));
 			}
 			
 			perplexValue.add(this.getPerplexity());
-			//System.out.println("perplexValue : "+perplexValue);
-			
+			//System.out.println("added : "+this.getPerplexity());
 		}
 		//System.out.println("Converged!");
 		//System.out.println("pageRank "+PR);
